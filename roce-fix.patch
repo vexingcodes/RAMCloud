@@ -4,26 +4,28 @@ From: Daniel Noland <daniel.noland@gmail.com>
 
 
 ---
- src/HaveInfiniband.cc |    4 ++--
+ src/HaveInfiniband.cc |    6 +++---
  src/InfUdDriver.cc    |    3 +--
- src/Infiniband.cc     |   12 ++++++------
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ src/Infiniband.cc     |   10 ++++------
+ 3 files changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/src/HaveInfiniband.cc b/src/HaveInfiniband.cc
-index 502ba65b..f353ffe6 100644
+index 502ba65b..b880fa19 100644
 --- a/src/HaveInfiniband.cc
 +++ b/src/HaveInfiniband.cc
-@@ -23,8 +23,8 @@
+@@ -23,9 +23,9 @@
  
  int main() {
      int r;
 -    static_assert(IBV_QPT_RAW_ETH >= 0,
 -            "Symbol `IBV_QPT_RAW_ETH` is undefined; consider upgrading "
-+    static_assert(IBV_QPT_UD >= 0,
-+            "Symbol `IBV_QPT_UD` is undefined; consider upgrading "
-             "your libverbs.");
+-            "your libverbs.");
++    //static_assert(IBV_QPT_UD >= 0,
++    //        "Symbol `IBV_QPT_UD` is undefined; consider upgrading "
++    //        "your libverbs.");
      ibv_free_device_list(ibv_get_device_list(&r));
      return r;
+ }
 diff --git a/src/InfUdDriver.cc b/src/InfUdDriver.cc
 index 3fa2e4d3..0b8eaea4 100644
 --- a/src/InfUdDriver.cc
@@ -39,7 +41,7 @@ index 3fa2e4d3..0b8eaea4 100644
                                       txcq, rxcq, MAX_TX_QUEUE_DEPTH,
                                       MAX_RX_QUEUE_DEPTH,
 diff --git a/src/Infiniband.cc b/src/Infiniband.cc
-index 93344f75..2280c580 100644
+index 93344f75..79d8b914 100644
 --- a/src/Infiniband.cc
 +++ b/src/Infiniband.cc
 @@ -520,7 +520,7 @@ Infiniband::QueuePair::QueuePair(Infiniband& infiniband, ibv_qp_type type,
@@ -69,31 +71,21 @@ index 93344f75..2280c580 100644
          throw TransportException(HERE, "activate() called on wrong qp type");
  
      if (getState() != IBV_QPS_INIT) {
-@@ -704,16 +702,17 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
+@@ -704,7 +702,7 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
      // now move to RTS state
      qpa.qp_state = IBV_QPS_RTS;
      int flags = IBV_QP_STATE;
 -    if (type != IBV_QPT_RAW_ETH) {
-+    //if (type != IBV_QPT_RAW_ETH) {
++    if (type != IBV_QPT_UD) {
          qpa.sq_psn = initialPsn;
          flags |= IBV_QP_SQ_PSN;
--    }
-+    //}
-     ret = ibv_modify_qp(qp, &qpa, flags);
-     if (ret) {
-         LOG(ERROR, "failed to transition to RTS state");
+     }
+@@ -714,7 +712,7 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
          throw TransportException(HERE, ret);
      }
  
-+    /*
-     if (type == IBV_QPT_RAW_ETH) {
+-    if (type == IBV_QPT_RAW_ETH) {
++    if (type == IBV_QPT_UD) {
          ibv_gid mgid;
          memset(&mgid, 0, sizeof(mgid));
-@@ -723,6 +722,7 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
-             throw TransportException(HERE, ret);
-         }
-     }
-+    */
- }
- 
- /**
+         memcpy(&mgid.raw[10], localMac->address, 6);
