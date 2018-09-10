@@ -6,8 +6,8 @@ From: Daniel Noland <daniel.noland@gmail.com>
 ---
  src/HaveInfiniband.cc |    6 +++---
  src/InfUdDriver.cc    |    3 +--
- src/Infiniband.cc     |   12 +++++-------
- 3 files changed, 9 insertions(+), 12 deletions(-)
+ src/Infiniband.cc     |   28 +++++++++++-----------------
+ 3 files changed, 15 insertions(+), 22 deletions(-)
 
 diff --git a/src/HaveInfiniband.cc b/src/HaveInfiniband.cc
 index 502ba65b..b880fa19 100644
@@ -41,7 +41,7 @@ index 3fa2e4d3..0b8eaea4 100644
                                       txcq, rxcq, MAX_TX_QUEUE_DEPTH,
                                       MAX_RX_QUEUE_DEPTH,
 diff --git a/src/Infiniband.cc b/src/Infiniband.cc
-index 93344f75..4f57c4ed 100644
+index 93344f75..dff93401 100644
 --- a/src/Infiniband.cc
 +++ b/src/Infiniband.cc
 @@ -520,7 +520,7 @@ Infiniband::QueuePair::QueuePair(Infiniband& infiniband, ibv_qp_type type,
@@ -71,16 +71,16 @@ index 93344f75..4f57c4ed 100644
          throw TransportException(HERE, "activate() called on wrong qp type");
  
      if (getState() != IBV_QPS_INIT) {
-@@ -704,17 +702,17 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
+@@ -704,25 +702,21 @@ Infiniband::QueuePair::activate(const Tub<MacAddress>& localMac)
      // now move to RTS state
      qpa.qp_state = IBV_QPS_RTS;
      int flags = IBV_QP_STATE;
 -    if (type != IBV_QPT_RAW_ETH) {
-+    //if (type != IBV_QPT_RAW_ETH) {
-         qpa.sq_psn = initialPsn;
-         flags |= IBV_QP_SQ_PSN;
+-        qpa.sq_psn = initialPsn;
+-        flags |= IBV_QP_SQ_PSN;
 -    }
-+    //}
++    qpa.sq_psn = initialPsn;
++    flags |= IBV_QP_SQ_PSN;
      ret = ibv_modify_qp(qp, &qpa, flags);
      if (ret) {
          LOG(ERROR, "failed to transition to RTS state");
@@ -88,7 +88,21 @@ index 93344f75..4f57c4ed 100644
      }
  
 -    if (type == IBV_QPT_RAW_ETH) {
-+    if (type == IBV_QPT_UD) {
-         ibv_gid mgid;
-         memset(&mgid, 0, sizeof(mgid));
-         memcpy(&mgid.raw[10], localMac->address, 6);
+-        ibv_gid mgid;
+-        memset(&mgid, 0, sizeof(mgid));
+-        memcpy(&mgid.raw[10], localMac->address, 6);
+-        if (ibv_attach_mcast(qp, &mgid, 0)) {
+-            LOG(ERROR, "failed to bind to mac address");
+-            throw TransportException(HERE, ret);
+-        }
+-    }
++    /* ibv_gid mgid; */
++    /* memset(&mgid, 0, sizeof(mgid)); */
++    /* memcpy(&mgid.raw[10], localMac->address, 6); */
++    /* if (ibv_attach_mcast(qp, &mgid, 0)) { */
++    /*     LOG(ERROR, "failed to bind to mac address"); */
++    /*     throw TransportException(HERE, ret); */
++    /* } */
+ }
+ 
+ /**
